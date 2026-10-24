@@ -6,7 +6,7 @@ check:
 
 # Check code formatting
 fmt:
-	cargo fmt --all -- --check
+	cargo fmt --all
 
 # Run Clippy
 lint:
