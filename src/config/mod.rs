@@ -42,7 +42,10 @@ impl Config {
     }
 
     pub fn load(path: &Path) -> Result<Self, ConfigError> {
-        let content = std::fs::read_to_string(path).map_err(|source| ConfigError::Read { path: path.to_path_buf(), source, })?;
+        let content = std::fs::read_to_string(path).map_err(|source| ConfigError::Read {
+            path: path.to_path_buf(),
+            source,
+        })?;
 
         Self::from_toml_str(&content)
     }
@@ -63,12 +66,18 @@ impl Config {
             }
         }
 
-        Err(ConfigError::NotFound { searched: CANDIDATES.join(", ") })
+        Err(ConfigError::NotFound {
+            searched: CANDIDATES.join(", "),
+        })
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::fs;
+
+    use tempfile::tempdir;
+
     use super::{Config, ConfigError};
     use crate::config::versioning::{ConfigCalVer, ConfigSemVer, VersioningStrategy};
 
@@ -272,5 +281,71 @@ mod tests {
         let message = error_message("");
 
         assert!(message.contains("missing field `schema_version`"));
+    }
+
+    const SEMVER_FILE: &str = "schema_version = 1\n[versioning]\nstrategy = \"semver\"\n";
+    const CALVER_FILE: &str = "schema_version = 1\n[versioning]\nstrategy = \"calver\"\n";
+
+    #[test]
+    fn discover_finds_relix_toml() {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("relix.toml"), SEMVER_FILE).unwrap();
+
+        let config = Config::discover_in(dir.path(), None).unwrap();
+
+        assert!(matches!(config.versioning, VersioningStrategy::SemVer(_)));
+    }
+
+    #[test]
+    fn discover_falls_back_to_dot_config_dir() {
+        let dir = tempdir().unwrap();
+        fs::create_dir(dir.path().join(".config")).unwrap();
+        fs::write(dir.path().join(".config/relix.toml"), CALVER_FILE).unwrap();
+
+        let config = Config::discover_in(dir.path(), None).unwrap();
+
+        assert!(matches!(config.versioning, VersioningStrategy::CalVer(_)));
+    }
+
+    #[test]
+    fn discover_prefers_relix_toml_over_dot_config() {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("relix.toml"), SEMVER_FILE).unwrap();
+        fs::create_dir(dir.path().join(".config")).unwrap();
+        fs::write(dir.path().join(".config/relix.toml"), CALVER_FILE).unwrap();
+
+        let config = Config::discover_in(dir.path(), None).unwrap();
+
+        assert!(matches!(config.versioning, VersioningStrategy::SemVer(_)));
+    }
+
+    #[test]
+    fn discover_explicit_path_wins() {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("relix.toml"), SEMVER_FILE).unwrap();
+        let other = dir.path().join("other.toml");
+        fs::write(&other, CALVER_FILE).unwrap();
+
+        let config = Config::discover_in(dir.path(), Some(&other)).unwrap();
+
+        assert!(matches!(config.versioning, VersioningStrategy::CalVer(_)));
+    }
+
+    #[test]
+    fn discover_fails_when_no_file() {
+        let dir = tempdir().unwrap();
+
+        let err = Config::discover_in(dir.path(), None).unwrap_err();
+
+        assert!(matches!(err, ConfigError::NotFound { .. }));
+    }
+
+    #[test]
+    fn load_fails_on_missing_file() {
+        let dir = tempdir().unwrap();
+
+        let err = Config::load(&dir.path().join("nope.toml")).unwrap_err();
+
+        assert!(matches!(err, ConfigError::Read { .. }));
     }
 }
