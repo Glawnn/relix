@@ -1,4 +1,7 @@
-#[derive(Debug)]
+use serde::Deserialize;
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields, default)]
 pub struct ConfigCalVer {
     pub format: String,
 }

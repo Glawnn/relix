@@ -1,10 +1,13 @@
 mod calver;
 mod semver;
 
+use serde::Deserialize;
+
 pub use calver::ConfigCalVer;
 pub use semver::ConfigSemVer;
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
+#[serde(tag = "strategy", rename_all = "lowercase")]
 pub enum VersioningStrategy {
     SemVer(ConfigSemVer),
     CalVer(ConfigCalVer),
