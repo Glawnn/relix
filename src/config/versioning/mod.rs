@@ -1,35 +1,33 @@
 mod calver;
 mod semver;
 
+use serde::Deserialize;
+
 pub use calver::ConfigCalVer;
 pub use semver::ConfigSemVer;
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize, PartialEq)]
+#[serde(tag = "strategy", rename_all = "lowercase")]
 pub enum VersioningStrategy {
     SemVer(ConfigSemVer),
     CalVer(ConfigCalVer),
 }
 
-#[derive(Debug)]
-pub struct ConfigVersioning {
-    pub strategy: VersioningStrategy,
-}
-
-impl Default for ConfigVersioning {
+impl Default for VersioningStrategy {
     fn default() -> Self {
-        Self {
-            strategy: VersioningStrategy::SemVer(ConfigSemVer::default()),
-        }
+        Self::SemVer(ConfigSemVer::default())
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{ConfigVersioning, VersioningStrategy};
+    use super::VersioningStrategy;
 
     #[test]
     fn default_strategy_is_semver() {
-        let config = ConfigVersioning::default();
-        assert!(matches!(config.strategy, VersioningStrategy::SemVer(_)));
+        assert!(matches!(
+            VersioningStrategy::default(),
+            VersioningStrategy::SemVer(_)
+        ));
     }
 }
