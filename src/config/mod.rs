@@ -1,6 +1,8 @@
 pub mod error;
 pub mod versioning;
 
+use std::path::Path;
+
 use error::ConfigError;
 use serde::Deserialize;
 use versioning::VersioningStrategy;
@@ -24,6 +26,8 @@ impl Default for Config {
     }
 }
 
+const CANDIDATES: [&str; 2] = ["relix.toml", ".config/relix.toml"];
+
 impl Config {
     pub fn from_toml_str(input: &str) -> Result<Self, ConfigError> {
         let config: Config = toml::from_str(input)?;
@@ -35,6 +39,31 @@ impl Config {
         }
 
         Ok(config)
+    }
+
+    pub fn load(path: &Path) -> Result<Self, ConfigError> {
+        let content = std::fs::read_to_string(path).map_err(|source| ConfigError::Read { path: path.to_path_buf(), source, })?;
+
+        Self::from_toml_str(&content)
+    }
+
+    pub fn discover(explicit: Option<&Path>) -> Result<Self, ConfigError> {
+        Self::discover_in(Path::new("."), explicit)
+    }
+
+    fn discover_in(base: &Path, explicit: Option<&Path>) -> Result<Self, ConfigError> {
+        if let Some(path) = explicit {
+            return Self::load(path);
+        }
+
+        for candidate in CANDIDATES {
+            let path = base.join(candidate);
+            if path.is_file() {
+                return Self::load(&path);
+            }
+        }
+
+        Err(ConfigError::NotFound { searched: CANDIDATES.join(", ") })
     }
 }
 
