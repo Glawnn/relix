@@ -6,7 +6,7 @@ use serde::Deserialize;
 pub use calver::ConfigCalVer;
 pub use semver::ConfigSemVer;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, PartialEq)]
 #[serde(tag = "strategy", rename_all = "lowercase")]
 pub enum VersioningStrategy {
     SemVer(ConfigSemVer),
