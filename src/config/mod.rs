@@ -80,7 +80,7 @@ mod tests {
 
     use super::{Config, ConfigError};
     use crate::config::versioning::{
-        ConfigCalVer, ConfigSemVer, SemVerVersion, VersioningStrategy,
+        CalVerFormat, ConfigCalVer, ConfigSemVer, SemVerVersion, VersioningStrategy,
     };
 
     fn error_message(input: &str) -> String {
@@ -163,7 +163,7 @@ mod tests {
 
             [versioning]
             strategy = "calver"
-            format = "YY.MM.PATCH"
+            format = "YY.0M.MICRO"
         "#;
 
         let config = Config::from_toml_str(input).unwrap();
@@ -171,7 +171,7 @@ mod tests {
         assert_eq!(
             config.versioning,
             VersioningStrategy::CalVer(ConfigCalVer {
-                format: "YY.MM.PATCH".into()
+                format: CalVerFormat::try_from("YY.0M.MICRO".to_string()).unwrap()
             })
         );
     }
@@ -214,6 +214,38 @@ mod tests {
         );
 
         assert!(message.contains("major cannot have leading zeros"));
+    }
+
+    #[test]
+    fn rejects_invalid_calver_format() {
+        for value in [
+            "",
+            "YYYY.FOO",
+            "YYYY.PATCH",
+            "M.MICRO",
+            "YYYY.M.M",
+            "YYYY-M",
+        ] {
+            let input = format!(
+                "schema_version = 1\n[versioning]\nstrategy = \"calver\"\nformat = \"{value}\"\n"
+            );
+
+            let err = Config::from_toml_str(&input).unwrap_err();
+
+            assert!(
+                matches!(err, ConfigError::Parse(_)),
+                "`{value}` should be rejected"
+            );
+        }
+    }
+
+    #[test]
+    fn error_suggests_micro_instead_of_patch() {
+        let message = error_message(
+            "schema_version = 1\n[versioning]\nstrategy = \"calver\"\nformat = \"YYYY.PATCH\"",
+        );
+
+        assert!(message.contains("use 'MICRO'"));
     }
 
     #[test]
