@@ -1,5 +1,18 @@
-schema_version=1
+# Relix configuration.
+# Docs: https://github.com/Glawnn/relix
+
+# Version of this file format. Only 1 is supported.
+schema_version = 1
 
 [versioning]
+# How versions are written: "semver" or "calver".
 strategy = "semver"
+
+# SemVer: the first version, as MAJOR.MINOR.PATCH (no pre-release suffix).
 initial_version = "0.1.0"
+
+# To use CalVer instead, replace the two lines above with:
+#   strategy = "calver"
+#   format = "YYYY.M.MICRO"
+# Tokens: YYYY YY 0Y (year), M 0M (month), D 0D (day), MAJOR MINOR MICRO.
+# See https://calver.org for the notation.
