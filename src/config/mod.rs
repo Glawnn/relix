@@ -7,6 +7,8 @@ use error::ConfigError;
 use serde::Deserialize;
 use versioning::VersioningStrategy;
 
+pub const DEFAULT_TEMPLATE: &str = include_str!("default.toml");
+
 const SUPPORTED_SCHEMA_VERSION: u32 = 1;
 
 #[derive(Debug, Deserialize, PartialEq)]
@@ -78,7 +80,7 @@ mod tests {
 
     use tempfile::tempdir;
 
-    use super::{Config, ConfigError};
+    use super::{Config, ConfigError, DEFAULT_TEMPLATE};
     use crate::config::versioning::{
         CalVerFormat, ConfigCalVer, ConfigSemVer, SemVerVersion, VersioningStrategy,
     };
@@ -93,6 +95,31 @@ mod tests {
         let config = Config::default();
 
         assert!(matches!(config.versioning, VersioningStrategy::SemVer(_)));
+    }
+
+    #[test]
+    fn default_template_matches_default_config() {
+        let config = Config::from_toml_str(DEFAULT_TEMPLATE).unwrap();
+
+        assert_eq!(config, Config::default());
+    }
+
+    #[test]
+    fn default_template_calver_example_is_valid() {
+        let uncommented: String = DEFAULT_TEMPLATE
+            .lines()
+            .filter(|line| !line.starts_with("strategy") && !line.starts_with("initial_version"))
+            .map(|line| line.strip_prefix("#   ").unwrap_or(line))
+            .filter(|line| !line.starts_with('#'))
+            .collect::<Vec<_>>()
+            .join("\n");
+
+        let config = Config::from_toml_str(&uncommented).unwrap();
+
+        assert_eq!(
+            config.versioning,
+            VersioningStrategy::CalVer(ConfigCalVer::default())
+        );
     }
 
     #[test]

@@ -4,7 +4,7 @@ fn main() -> ExitCode {
     match relix::cli::run() {
         Ok(()) => ExitCode::SUCCESS,
         Err(e) => {
-            println!("error: {e:#}");
+            eprintln!("error: {e:#}");
             ExitCode::FAILURE
         }
     }
