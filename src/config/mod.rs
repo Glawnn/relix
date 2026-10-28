@@ -7,6 +7,8 @@ use error::ConfigError;
 use serde::Deserialize;
 use versioning::VersioningStrategy;
 
+pub const DEFAULT_TEMPLATE: &str = include_str!("default.toml");
+
 const SUPPORTED_SCHEMA_VERSION: u32 = 1;
 
 #[derive(Debug, Deserialize, PartialEq)]

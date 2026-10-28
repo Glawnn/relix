@@ -14,7 +14,10 @@ pub(super) struct ArgsCli {
 #[derive(Debug, Subcommand)]
 pub(super) enum Command {
     /// Initialize a new release
-    Init,
+    Init {
+        #[arg(long)]
+        force: bool,
+    },
     /// Validate configuration and repository
     Check,
 }
