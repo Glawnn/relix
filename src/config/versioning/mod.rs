@@ -4,7 +4,7 @@ mod semver;
 use serde::Deserialize;
 
 pub use calver::ConfigCalVer;
-pub use semver::ConfigSemVer;
+pub use semver::{ConfigSemVer, SemVerVersion};
 
 #[derive(Debug, Deserialize, PartialEq)]
 #[serde(tag = "strategy", rename_all = "lowercase")]

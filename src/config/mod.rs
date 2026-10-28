@@ -79,7 +79,9 @@ mod tests {
     use tempfile::tempdir;
 
     use super::{Config, ConfigError};
-    use crate::config::versioning::{ConfigCalVer, ConfigSemVer, VersioningStrategy};
+    use crate::config::versioning::{
+        ConfigCalVer, ConfigSemVer, SemVerVersion, VersioningStrategy,
+    };
 
     fn error_message(input: &str) -> String {
         let err = Config::from_toml_str(input).unwrap_err();
@@ -115,7 +117,7 @@ mod tests {
         assert_eq!(
             config.versioning,
             VersioningStrategy::SemVer(ConfigSemVer {
-                initial_version: "1.0.0".into()
+                initial_version: SemVerVersion::try_from("1.0.0".to_string()).unwrap(),
             })
         );
     }
@@ -187,6 +189,31 @@ mod tests {
         let err = Config::from_toml_str(input).unwrap_err();
 
         assert!(matches!(err, ConfigError::Parse(_)));
+    }
+
+    #[test]
+    fn rejects_invalid_semver_initial_version() {
+        for value in ["banane", "1.2", "1.2.3.4", "01.2.3", "1.2.3-rc.1", ""] {
+            let input = format!(
+                "schema_version = 1\n[versioning]\nstrategy = \"semver\"\ninitial_version = \"{value}\"\n"
+            );
+
+            let err = Config::from_toml_str(&input).unwrap_err();
+
+            assert!(
+                matches!(err, ConfigError::Parse(_)),
+                "`{value}` should be rejected"
+            );
+        }
+    }
+
+    #[test]
+    fn error_names_invalid_semver_initial_version() {
+        let message = error_message(
+            "schema_version = 1\n[versioning]\nstrategy = \"semver\"\ninitial_version = \"01.2.3\"",
+        );
+
+        assert!(message.contains("major cannot have leading zeros"));
     }
 
     #[test]
